@@ -1,0 +1,36 @@
+[MESH]
+filename = channel_ell_055.vol
+curved_elements = False
+
+[FINITE ELEMENT SPACE]
+elements = u -> VectorH1
+           p -> H1
+interpolant_order = 3
+
+[DG]
+DG = False
+;interior_penalty_coefficient = 10.0
+
+[SOLVER]
+solver = direct
+preconditioner = None
+linearization_method = Oseen
+nonlinear_tolerance = relative -> 1e-12
+                      absolute -> 1e-12
+nonlinear_max_iterations = 400
+
+[TRANSIENT]
+transient = False
+scheme = euler IMEX
+time_range = 0.0, 1.0
+dt = 1e-2
+
+[VISUALIZATION]
+save_to_file = True
+save_type = .vtu
+save_frequency = 1, numit
+
+[OTHER]
+model = INS
+run_dir = .
+num_threads = 2

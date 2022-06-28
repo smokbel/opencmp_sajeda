@@ -1,0 +1,7 @@
+[DIRICHLET]
+u = wall  -> [0.0, 0.0]
+    inlet -> [3.75*y*(1-y)/(1*1), 0.0]
+    cyl   -> [0.0, 0.0]
+
+[STRESS]
+stress = outlet -> [0.0, 0.0]

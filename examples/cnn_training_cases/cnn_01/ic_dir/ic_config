@@ -1,0 +1,6 @@
+[STOKES]
+all = all -> None
+
+[INS]
+all = all -> output/sol/ins_350.sol
+;None
