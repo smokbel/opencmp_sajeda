@@ -1,0 +1,7 @@
+{
+	"learning_rate": 8e-5,
+	"num_epochs": 80,
+	"display_epochs": 1,
+	"batch": 1,
+	"model_save": "model_june16.pth"
+}
