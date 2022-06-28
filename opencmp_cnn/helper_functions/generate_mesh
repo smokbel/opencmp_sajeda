@@ -1,0 +1,20 @@
+[RECTANGLE]
+x_0 = 0
+y_0 = 0
+x_n = 4.0
+y_n = 1.0
+
+[IMMERSED_OBJ]
+type = ellipse
+radius = 0.2
+cx = 0.675
+cy = 0.5
+
+[FILE]
+save_file_vol = channel_ell_055.vol
+;save_file_msh = 2d_ell.msh
+
+[MESH]
+maxh_walls = 0.1
+maxh_obj = 0.05
+maxh_global = 0.07
