@@ -1,13 +1,14 @@
 from ngsolve import *
 from ngsolve.comp import IntegrationRuleSpace
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
 import ngsolve as ngs
 import os
 from pathlib import Path
 import json
 from opencmp.config_functions import expanded_config_parser
+import matplotlib.pyplot as plt
+
 
 def data_gen(data_folder: str, n: int):
     """
@@ -32,6 +33,11 @@ def data_gen(data_folder: str, n: int):
     element = config.get_dict(['FINITE ELEMENT SPACE', 'elements'], run_dir, None, all_str=True)
     interp_ord = config.get_item(['FINITE ELEMENT SPACE', 'interpolant_order'], int)
 
+    print("Interpolating order: ", interp_ord)
+    print("Element: ", element)
+
+
+
     # Create IntegrationRuleSpaces for each element.
     # Each element will need two IRS: One to interpolate the Gridfunction data to, another to get the coordinates from.
 
@@ -39,11 +45,14 @@ def data_gen(data_folder: str, n: int):
     idx = 0 # Index in Gridfunction components.
 
     m = 8
-    np_arr = np.empty((1170,m,n,1))
+    np_arr = np.empty((85, m, 22224, 1))
+
 
     f = 0
     p = Path(data_folder)
     subdirectories = [x for x in p.iterdir() if x.is_dir()]
+    print(subdirectories)
+
     for case in subdirectories:
         jsonfile = str(case) + '/info.json'
         with open(jsonfile) as json_file:
@@ -58,6 +67,8 @@ def data_gen(data_folder: str, n: int):
         mesh_path = dir_path + "/" + mesh_file
         mesh = Mesh(mesh_path)
 
+        print("Mesh file: ", mesh_file)
+
         fes_l = []
         for field in element:
             V = getattr(ngs, element[field])
@@ -71,23 +82,22 @@ def data_gen(data_folder: str, n: int):
         fes = FESpace(fes_l)
 
         for filename in os.listdir(case):
-            if filename not in ['info.json', target_file]:
+            print("LENGTH OF ", len(os.listdir(case)), os.listdir(case))
+            print("MESH PATH ", mesh_path)
+            mesh_path_dir = os.path.join(case, mesh_file)
+            print(mesh_path_dir)
+            if filename not in ['info.json', target_file, mesh_path, 'channel_ell_055.vol']:
                 sol_file = os.path.join(case, filename)
 
+                print("Working on file: ", sol_file)
                 # Load sol file as a Gridfunction.
                 gfu_init = GridFunction(fes)
                 gfu_init.Load(sol_file)
-                print("Size of weights vector: ", len(gfu_init.vec))
-                print("Values ", gfu_init.vec[0:10])
 
                 gfu_final = GridFunction(fes)
                 gfu_final.Load(sol_file_target)
-                print("Size of weights vector final: ", len(gfu_final.vec))
-                print("Values ", gfu_final.vec[0:10])
 
-
-
-                dim = gfu_init.components[idx].dim
+                #dim = gfu_init.components[idx].dim
 
                 # Working with 2d data - the fesir coordinate data always has dimension 2.
                 fesir_coor = IntegrationRuleSpace(mesh=mesh, order=interp_ord, dirichlet="wall|inlet|cyl") ** 2
@@ -97,37 +107,68 @@ def data_gen(data_folder: str, n: int):
                 gfuir_coor.Interpolate(CF((x, y)))
 
                 # Coordinates from IntegrationRuleSpace.
-                coord_x = gfuir_coor.components[0]
-                coord_y = gfuir_coor.components[1]
+                coord_x = gfuir_coor.components[0].vec.FV().NumPy()
+                coord_y = gfuir_coor.components[1].vec.FV().NumPy()
 
                 # Create intermediate and final (target) data.
+                # First, order points so the data makes sense spatially.
+                # sorted_coord_x = coord_x.sort()
+                # sorted_coord_y = coord_y.sort()
+
+                coords = [(coord_x[i], coord_y[i]) for i in range(len(coord_x))]
+                coords = np.array(coords)
+                ind = np.lexsort((coords[:, 1], coords[:, 0]))
+                sorted_points = coords[ind]
+
                 z = []
+
                 for i in range(n):
-                    p1 = coord_x.vec[i]
-                    p2 = coord_y.vec[i]
-                    np_arr[f, 0, i, 0] = gfu_init.components[idx](mesh(p1,p2))[0] / uref # Ux
-                    z.append(gfu_init.components[idx](mesh(p1,p2))[0] / uref)
-                    np_arr[f, 1, i, 0] = gfu_init.components[idx](mesh(p1, p2))[1] / uref # Uy
-                    np_arr[f, 2, i, 0] = p1 # x coordinate
-                    np_arr[f, 3, i, 0] = p2 # y coordinate
-                    np_arr[f, 4, i, 0] = gfu_final.components[idx](mesh(p1, p2))[0] / uref# Ux
-                    np_arr[f, 5, i, 0] = gfu_final.components[idx](mesh(p1, p2))[1] / uref# Uy
+                    #p1, p2 = sorted_coord_x[i], sorted_coord_y[i]
+                    p1,p2 = sorted_points[i,0], sorted_points[i,1]
+                    np_arr[f, 0, i, 0] = gfu_init.components[0](mesh(p1, p2))[0]  # Ux
+                    z.append(gfu_init.components[0](mesh(p1, p2))[0] )
+                    np_arr[f, 1, i, 0] = gfu_init.components[0](mesh(p1, p2))[1]  # Uy
+                    #print("Val u is: ", gfu_init.components[idx](mesh(p1, p2)) )
+                    np_arr[f, 2, i, 0] = p1  # x coordinate
+                    np_arr[f, 3, i, 0] = p2  # y coordinate
+                    np_arr[f, 4, i, 0] = gfu_final.components[idx](mesh(p1, p2))[0]   # Ux
+                    np_arr[f, 5, i, 0] = gfu_final.components[idx](mesh(p1, p2))[1]   # Uy
                     np_arr[f, 6, i, 0] = p1  # x coordinate
                     np_arr[f, 7, i, 0] = p2  # y coordinate
+
+
+
+                if filename == 'ins_20.sol':
+                    max_ux = np.max(np_arr[f, 0, :, 0])
+                    max_uy = np.max(np_arr[f,1,:,0])
+                    print("Max ux: ", max_ux)
+                    print("Max uy: ", max_uy)
+                    # print("Arr representing ux ", np_arr[f, 0, :, 0])
+                    # print("Arr representing uy ", np_arr[f,1,:,0])
                 f += 1
-                print(f)
-        tot = len(coord_x.vec)
-        print(tot, mesh_path)
-        print("Intermediate: ", np_arr[10,0,45:55,0])
-        print("Final: ", np_arr[10, 4, 45:55, 0])
-        plt.scatter(coord_x.vec[0:tot], coord_y.vec[0:tot], s=0.0001, c="g", marker="*")
+        print("Length of sorted points is: ", len(sorted_points))
+        print("NP max before dividing: ", np.max(np_arr[0:80,0,:,0]))
+        print(" NP max for ux: ", max_ux)
+        np_arr[0:80,0,:,0] = np_arr[0:80,0,:,0] / max_ux
+        np_arr[0:80,1,:,0] = np_arr[0:80,1,:,0] / max_uy
+        np_arr[0:80, 4, :, 0] = np_arr[0:80, 4, :, 0] / max_ux
+        np_arr[0:80, 5, :, 0] = np_arr[0:80, 5, :, 0] / max_uy
+        print("Np max is: ", np.max(np_arr[0:80,0,:,0]))
+        plt.scatter(sorted_points[0:n, 0], sorted_points[0:n, 1], marker="*", s=0.05, alpha=0.8, c=z,
+                    cmap='plasma')
         plt.show()
+
+
+
     return np_arr
 
 
 
+
+
+
 #
-np_data = data_gen('../../../../cnn_data_case1', 12000)
+np_data = data_gen('./cases', 20000)
 np.save('./data_fc_test', np_data)
 
 #data = np.load('./data_fc.npy')

@@ -13,6 +13,7 @@ from numpy import savetxt
 from fcnn import NeuralNet
 import time
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 param_file = sys.argv[1]
 
@@ -25,10 +26,13 @@ model = NeuralNet()
 # model.load_state_dict(torch.load('./goodmodels/modelmay15_5.pth'))
 # model.eval()
 model = model.double()
+model.to(device)
+
 data = np.load('data_fc_test.npy')
 
 # Define an optimizer and the loss function
-optimizer = optim.RMSprop(model.parameters(), lr=param['learning_rate'])
+#optimizer = optim.RMSprop(model.parameters(), lr=param['learning_rate'])
+optimizer = optim.Adagrad(model.parameters(), lr=param['learning_rate'], lr_decay=1)
 # loss= torch.nn.MSELoss()
 loss = torch.nn.MSELoss()
 
@@ -52,8 +56,10 @@ print("Optimizer's state_dict:")
 for var_name in optimizer.state_dict():
     print(var_name, "\t", optimizer.state_dict()[var_name])
 
-data_size = 300
+data_size = 60
 i = 0
+new_data = data[:,:,:,0]
+print("New data shape: ", np.shape(new_data))
 while i + batch < data_size:
 
     # train_x = x.reshape(25,1,100,128,64)
@@ -63,15 +69,25 @@ while i + batch < data_size:
 
     # x_t = train_x[i:i+batch,0:1,:,:]
     # y_t = target_x[i+batch:i+batch+batch,0:1,:,:]
-    x_t = data[i:i + batch, :, :, :]
-    y_t = data[i:i + batch, 4:6, :, :]
+    x_t = new_data[i:i + batch, :, :]
+    y_t = new_data[i:i + batch, 4:6, :]
+
+    x_t = torch.from_numpy(x_t)
+    y_t = torch.from_numpy(y_t)
+
+    x_t = x_t.to(device)
+    y_t = y_t.to(device)
+
+    # inputs = torch.from_numpy(x)
+    # targets = torch.from_numpy(y)
+    # inputs = inputs.to(device)
 
     # print(np.shape(x))
     # print(np.shape(y))
     # print("Target:",i+batch, "to", i+batch+batch)
     # print("Batch:", i+batch)
     for epoch in range(1, num_epochs + 1):
-        y_t = y_t.reshape(2, 12000)
+        #y_t = y_t.reshape(2, length)
         train_val = model.backprop(x_t, y_t, loss, epoch, optimizer)
         # test_val= model.test(x_test, y_test, loss, epoch)
         # cross_vals.append(test_val)
@@ -84,7 +100,7 @@ while i + batch < data_size:
 
 # project_path = '/Users/sajedamokbel/Desktop/code/of_opencmp/opencmp_cnn/CNN_model'
 # path = os.path.join(project_path, 'model_apr20.pth')
-torch.save(model.state_dict(), 'model_jun16.pth')
+torch.save(model.state_dict(), 'model_jul7_2.pth')
 
 
 # Final training loss

@@ -26,7 +26,7 @@ model = NeuralNet()
 # model.eval()
 model = model.double()
 data = np.load('../data/data_apr20.npy')
-data = data[0:100,:,:,:]
+data = data[0:76,:,:,:]
 
 # Define an optimizer and the loss function
 optimizer = optim.RMSprop(model.parameters(), lr=param['learning_rate'])
