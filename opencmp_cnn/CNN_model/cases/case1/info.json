@@ -1,0 +1,6 @@
+{
+  "target_sol": "ins_80.sol",
+  "uref": 1.36,
+  "num_it": 10,
+  "mesh_file": "channel_ell_055.vol"
+}
