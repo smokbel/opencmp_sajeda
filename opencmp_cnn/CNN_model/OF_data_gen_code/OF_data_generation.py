@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import interpolate
 
-n = 100
-m = 60
+n = 75
+m = 40
 
 openfoam_dir = sys.argv[1]
 final_t = sys.argv[2] 
@@ -87,25 +87,56 @@ for i in range(22,22+num_points):
     Uy_vals.append(float(Uy_val))
     P_vals.append(float(P_data))
 
-print(len(x_coords))
-print(len(y_coords))
-print(len(Ux_vals))
-print(x_coords_map)
-print(max(x_coords), max(y_coords), max(Ux_vals))
-print(min(x_coords), min(y_coords), min(Ux_vals))
+#    Create interpolant function for Ux values.
+# f_ux = interpolate.interp2d(x_coords, y_coords, Ux_vals, kind='linear')
+# print(x_coords, y_coords)
+
+
+# i = 0
+for i in range(len(x_coords)):
+    Xval = x_coords[i]
+    Yval = y_coords[i]
+
+    idx_x = int(np.interp(Xval, x_interp, x_coords_map))
+    idx_y = int(np.interp(Yval, y_interp, y_coords_map))
+
+    if output_Ux[idx_x,idx_y] == 0:
+        output_Ux[idx_x,idx_y] = Ux_vals[i]
+    else:
+        # Find the next closest point
+        t = 1
+
+        if output_Ux[idx_x+t,idx_y] == 0:
+            output_Ux[idx_x + t, idx_y] =  Ux_vals[i]
+        elif output_Ux[idx_x-t,idx_y] == 0:
+            output_Ux[idx_x - t, idx_y] = Ux_vals[i]
+        elif  output_Ux[idx_x,idx_y+t] == 0:
+            output_Ux[idx_x, idx_y + t] = Ux_vals[i]
+        elif output_Ux[idx_x, idx_y - t] == 0:
+            output_Ux[idx_x, idx_y - t] = Ux_vals[i]
+        elif output_Ux[idx_x-t, idx_y - t] == 0:
+            output_Ux[idx_x-t, idx_y - t] = Ux_vals[i]
+        elif output_Ux[idx_x+t, idx_y+t] == 0:
+            output_Ux[idx_x+t, idx_y+t] = Ux_vals[i]
+
+
+
+
+
+
+
+
+
+
 # Given arrays of [x,y,u,p] we can use an interpolating function to determine values on a uniform grid.
 
 #for i in range(22,22+num_points):
-#    Create interpolant function for Ux values.
 
-
-f_ux = interpolate.interp2d(x_coords, y_coords, Ux_vals, kind='cubic')
 
     # Get corresponding Ux values for new, uniform points.
-z_ux = f_ux(x_interp, y_interp)
-df = pd.DataFrame(data=z_ux, columns=x_interp, index=y_interp)
-sns.heatmap(df, square=False)
-plt.show()
+# df = pd.DataFrame(data=z_ux, columns=x_interp, index=y_interp)
+# sns.heatmap(df, square=False)
+# plt.show()
 
 
 
@@ -117,8 +148,7 @@ plt.show()
     # Xval = coords_xyz[0]
     # Yval = coords_xyz[1]
     #
-    # idx_x = int(np.interp(Xval, x_interp, x_coords_map))
-    # idx_y = int(np.interp(Yval, y_interp, y_coords_map))
+
     #
     # # Grab corresponding Ux, Uy, and P data for point.
     # output_Ux[idx_x, idx_y] = float(U_data[0])
@@ -126,8 +156,8 @@ plt.show()
     # output_P[idx_x, idx_y] = float(P_data)
 
 
-# vis =sns.heatmap(output_Ux,vmin=np.min(output_Ux),vmax=np.max(output_Ux))
-# plt.show()
+vis =sns.heatmap(output_Ux,vmin=np.min(output_Ux),vmax=np.max(output_Ux))
+plt.show()
 #
 # vis =sns.heatmap(output_Uy,vmin=np.min(output_Uy),vmax=np.max(output_Uy))
 # plt.show()
