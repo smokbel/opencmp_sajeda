@@ -117,11 +117,13 @@ def remove_inf(data_arr, m, n):
 
 output_Ux = file_handle(file_name=file_dir + 'U', n=n, m=m, field='Ux')
 output_Uy = file_handle(file_name=file_dir + 'U', n=n, m=m, field='Uy')
-output_P = file_handle(file_name=file_dir + 'P', n=n, m=m, field='p')
+output_P = file_handle(file_name=file_dir + 'p', n=n, m=m, field='p')
 
 output_Ux = remove_inf(output_Ux, m, n)
 output_Uy = remove_inf(output_Uy, m, n)
 output_P = remove_inf(output_P, m, n)
+
+np.save('./output_Ux', output_Ux)
 
 vis =sns.heatmap(output_Ux,vmin=np.min(output_Ux),vmax=np.max(output_Ux))
 plt.show()
@@ -131,3 +133,4 @@ plt.show()
 
 vis =sns.heatmap(output_P,vmin=np.min(output_P),vmax=np.max(output_P))
 plt.show()
+

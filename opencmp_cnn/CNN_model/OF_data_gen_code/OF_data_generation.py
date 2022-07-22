@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import interpolate
 
-n = 75
-m = 40
+n = 100
+m = 60
 
 openfoam_dir = sys.argv[1]
 final_t = sys.argv[2] 
@@ -69,6 +69,20 @@ Ux_vals = []
 Uy_vals = []
 P_vals = []
 
+def numpy_to_scatter(arr, n, m, mesh, x_coords, y_coords, Ux_vals):
+
+    x_coor = np.array(mesh.points[:, 0])
+    y_coor = np.array(mesh.points[:, 1])
+
+    x_interp = np.linspace(np.min(x_coor), np.max(x_coor), num=n)
+    y_interp = np.linspace(np.min(y_coor), np.max(y_coor), num=m)
+
+    fcn = interpolate.RectBivariateSpline(x_interp,y_interp,arr)
+    for i in range(len(x_coords)):
+        new_Ux = fcn.ev(x_coords[i], y_coords[i])
+        print(new_Ux, Ux_vals[i])
+
+
 for i in range(22,22+num_points):
     coords_xyz = lines_points[i].replace('(', '').replace(')', '').split(' ')
     U_data = lines_vel[i].replace('(', '').replace(')', '').split(' ')
@@ -91,33 +105,45 @@ for i in range(22,22+num_points):
 # f_ux = interpolate.interp2d(x_coords, y_coords, Ux_vals, kind='linear')
 # print(x_coords, y_coords)
 
+output_Ux = np.load('./output_Ux.npy')
+numpy_to_scatter(output_Ux, n, m, mesh, x_coords, y_coords, Ux_vals)
+
 
 # i = 0
-for i in range(len(x_coords)):
-    Xval = x_coords[i]
-    Yval = y_coords[i]
+# for i in range(len(x_coords)):
+#     Xval = x_coords[i]
+#     Yval = y_coords[i]
+#
+#     idx_x = int(np.interp(Xval, x_interp, x_coords_map))
+#     idx_y = int(np.interp(Yval, y_interp, y_coords_map))
+#
+#     if output_Ux[idx_x,idx_y] == 0:
+#         output_Ux[idx_x,idx_y] = Ux_vals[i]
+#     elif idx_x == 58 or idx_x == 0:
+#         print("here")
+#         output_Ux[idx_x, idx_y] = 0
 
-    idx_x = int(np.interp(Xval, x_interp, x_coords_map))
-    idx_y = int(np.interp(Yval, y_interp, y_coords_map))
 
-    if output_Ux[idx_x,idx_y] == 0:
-        output_Ux[idx_x,idx_y] = Ux_vals[i]
-    else:
-        # Find the next closest point
-        t = 1
 
-        if output_Ux[idx_x+t,idx_y] == 0:
-            output_Ux[idx_x + t, idx_y] =  Ux_vals[i]
-        elif output_Ux[idx_x-t,idx_y] == 0:
-            output_Ux[idx_x - t, idx_y] = Ux_vals[i]
-        elif  output_Ux[idx_x,idx_y+t] == 0:
-            output_Ux[idx_x, idx_y + t] = Ux_vals[i]
-        elif output_Ux[idx_x, idx_y - t] == 0:
-            output_Ux[idx_x, idx_y - t] = Ux_vals[i]
-        elif output_Ux[idx_x-t, idx_y - t] == 0:
-            output_Ux[idx_x-t, idx_y - t] = Ux_vals[i]
-        elif output_Ux[idx_x+t, idx_y+t] == 0:
-            output_Ux[idx_x+t, idx_y+t] = Ux_vals[i]
+
+    # else:
+    #     # Find the next closest point
+    #     t = 1
+    #     q= 2
+    #
+    #     if output_Ux[idx_x+t,idx_y] == 0:
+    #         output_Ux[idx_x + t, idx_y] =  Ux_vals[i]
+    #     elif output_Ux[idx_x-t,idx_y] == 0:
+    #         output_Ux[idx_x - t, idx_y] = Ux_vals[i]
+    #     elif  output_Ux[idx_x,idx_y+t] == 0:
+    #         output_Ux[idx_x, idx_y + t] = Ux_vals[i]
+    #     elif output_Ux[idx_x, idx_y - t] == 0:
+    #         output_Ux[idx_x, idx_y - t] = Ux_vals[i]
+    #     elif output_Ux[idx_x-t, idx_y - t] == 0:
+    #         output_Ux[idx_x-t, idx_y - t] = Ux_vals[i]
+    #     elif output_Ux[idx_x+t, idx_y+t] == 0:
+    #         output_Ux[idx_x+t, idx_y+t] = Ux_vals[i]
+
 
 
 
@@ -156,9 +182,9 @@ for i in range(len(x_coords)):
     # output_P[idx_x, idx_y] = float(P_data)
 
 
-vis =sns.heatmap(output_Ux,vmin=np.min(output_Ux),vmax=np.max(output_Ux))
-plt.show()
-#
+# vis =sns.heatmap(output_Ux,vmin=np.min(output_Ux),vmax=np.max(output_Ux))
+# plt.show()
+# #
 # vis =sns.heatmap(output_Uy,vmin=np.min(output_Uy),vmax=np.max(output_Uy))
 # plt.show()
 #
